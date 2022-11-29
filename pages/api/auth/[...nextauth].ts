@@ -100,15 +100,6 @@ export const authOptions = {
       // Access token has expired, try to update it
       return refreshAccessToken(token);
     },
-    async session({ session, token }) {
-      if (token) {
-        // Return all data into user
-        session.user = { ...token.user, ...token.account, ...token.profile };
-        session.accessToken = token.accessToken;
-        session.error = token.error;
-      }
-      return session;
-    },
   },
 };
 export default NextAuth(authOptions);
