@@ -159,7 +159,7 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Access token has expired, try to update it
-      // return refreshAccessToken(token);
+      return refreshAccessToken(token);
     },
     async session({ session, token }) {
       if (token) {
