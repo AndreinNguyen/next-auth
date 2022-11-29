@@ -106,31 +106,33 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user, account, profile }) {
+      return token;
+
       // Initial sign
 
-      if (account) {
-        console.log("✅✅✅ if (account && user && profile) === true");
+      // if (account) {
+      //   console.log("✅✅✅ if (account && user && profile) === true");
 
-        user.familyName = profile.family_name;
-        user.givenName = profile.given_name;
-        user.emailVerified = profile.email_verified;
-        return {
-          ...token,
-          accessToken: account.access_token,
-          accessTokenExpires: account.expires_at * 1000,
-          refreshToken: account.refresh_token,
-          user,
-          account,
-        };
-      }
+      //   user.familyName = profile.family_name;
+      //   user.givenName = profile.given_name;
+      //   user.emailVerified = profile.email_verified;
+      //   return {
+      //     ...token,
+      //     accessToken: account.access_token,
+      //     accessTokenExpires: account.expires_at * 1000,
+      //     refreshToken: account.refresh_token,
+      //     user,
+      //     account,
+      //   };
+      // }
 
-      // Return previous token if the access token has not expired yet
-      if (Date.now() < token.accessTokenExpires) {
-        console.log(
-          "😀😀😀 if (Date.now() < token.accessTokenExpires) === true"
-        );
-        return token;
-      }
+      // // Return previous token if the access token has not expired yet
+      // if (Date.now() < token.accessTokenExpires) {
+      //   console.log(
+      //     "😀😀😀 if (Date.now() < token.accessTokenExpires) === true"
+      //   );
+      //   return token;
+      // }
 
       // Access token has expired, try to update it
       // return refreshAccessToken(token);
