@@ -128,8 +128,9 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
-      console.log(`😢😢😢account`, account);
-      console.log(`😢😢😢 (Date.now()`, Date.now());
+      console.log(`😢😢😢 account`, account);
+      console.log(`📅📅📅📅 Date.now`);
+      console.log(Date.now());
       console.log(`😢😢😢 token.accessTokenExpires`, token.accessTokenExpires);
       console.log(
         `😢😢😢 Date.now() < token.accessTokenExpires`,
