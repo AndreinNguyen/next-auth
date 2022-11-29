@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
@@ -61,7 +61,7 @@ import KeycloakProvider from "next-auth/providers/keycloak";
 //   }
 // }
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     KeycloakProvider({
       clientId: `fitness-app`,
@@ -70,6 +70,13 @@ export const authOptions = {
       idToken: true,
     }),
   ],
+
+  // callbacks: {
+  //   async jwt(data) {
+  //     console.log(data);
+  //     return data;
+  //   },
+  // },
 
   // callbacks: {
   //   async jwt({ token, user, account, profile }) {
