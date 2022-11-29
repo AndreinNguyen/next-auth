@@ -106,6 +106,8 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user, account, profile }) {
+      console.log(`😢😢😢account`, account);
+
       return token;
 
       // Initial sign
