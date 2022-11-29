@@ -115,6 +115,7 @@ export const authOptions: NextAuthOptions = {
         user.givenName = profile.given_name;
         user.emailVerified = profile.email_verified;
         return {
+          ...token,
           accessToken: account.access_token,
           accessTokenExpires: account.expires_at * 1000,
           refreshToken: account.refresh_token,
