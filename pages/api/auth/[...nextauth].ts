@@ -6,8 +6,8 @@ async function refreshAccessToken(token: JWT) {
   try {
     if (Date.now() > token.refreshTokenExpired) throw Error;
     const details = {
-      client_id: process.env.NX_NEXT_PUBLIC_KEYCLOAK_CLIENT_ID,
-      client_secret: process.env.NX_NEXT_PUBLIC_KEYCLOAK_CLIENT_SECRET,
+      client_id: "fitness-app",
+      client_secret: "SmeYEExCsyBLDcKfoAKVEg7VXnzB8vpe",
       grant_type: ["refresh_token"],
       refresh_token: token.refreshToken,
     };
@@ -19,7 +19,7 @@ async function refreshAccessToken(token: JWT) {
       formBody.push(encodedKey + "=" + encodedValue);
     });
     const formData = formBody.join("&");
-    const url = `${process.env.NX_NEXT_PUBLIC_KEYCLOAK_BASE_URL}/token`;
+    const url = `https://lab-ids.savvycom.xyz/realms/savvy-fitness/protocol/openid-connect/token`;
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -64,9 +64,9 @@ async function refreshAccessToken(token: JWT) {
 export const authOptions = {
   providers: [
     KeycloakProvider({
-      clientId: `${process.env.NX_NEXT_PUBLIC_KEYCLOAK_CLIENT_ID}`,
-      clientSecret: `${process.env.NX_NEXT_PUBLIC_KEYCLOAK_CLIENT_SECRET}`,
-      issuer: `${process.env.NX_NEXT_PUBLIC_KEYCLOAK_ISSUER}`,
+      clientId: `fitness-app`,
+      clientSecret: `SmeYEExCsyBLDcKfoAKVEg7VXnzB8vpe`,
+      issuer: `https://lab-ids.savvycom.xyz/realms/savvy-fitness`,
       idToken: true,
     }),
   ],
