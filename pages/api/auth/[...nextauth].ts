@@ -1,12 +1,45 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth, { DefaultSession, NextAuthOptions } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
+declare module "next-auth" {
+  interface Session {
+    accessToken: string;
+    error: string;
+    user: {
+      familyName?: string;
+      emailVerified?: boolean;
+      givenName?: string;
+      id?: string;
+      id_token?: string;
+    } & DefaultSession["user"];
+  }
+}
+declare module "next-auth/jwt" {
+  interface JWT {
+    user: {
+      familyName?: string;
+      emailVerified?: boolean;
+      givenName?: string;
+      id?: string;
+      id_token?: string;
+    } & DefaultSession["user"];
+    account: any;
+    profile: any;
+    accessToken: string;
+    error: string;
+    refreshTokenExpired: number;
+    refreshToken: string;
+  }
+}
+
 async function refreshAccessToken(token: JWT) {
+  console.log("⭕️⭕️ run in refreshAccessToken");
+
   try {
     if (Date.now() > token.refreshTokenExpired) throw Error;
     const details = {
-      client_id: "fitness-app",
+      client_id: process.env.NX_NEXT_PUBLIC_KEYCLOAK_CLIENT_ID,
       client_secret: "SmeYEExCsyBLDcKfoAKVEg7VXnzB8vpe",
       grant_type: ["refresh_token"],
       refresh_token: token.refreshToken,
@@ -45,7 +78,7 @@ async function refreshAccessToken(token: JWT) {
   } catch (error) {
     console.log("error", error);
     let ErrMessage;
-    switch (error.error) {
+    switch (error) {
       case "invalid_grant":
         ErrMessage = "SessionNotActive";
         break;
@@ -71,41 +104,63 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  // callbacks: {
-  //   async jwt(data) {
-  //     console.log(data);
-  //     return data;
-  //   },
-  // },
-
   callbacks: {
     async jwt({ token, user, account, profile }) {
+      // Initial sign
+
+      if (account) {
+        console.log("✅✅✅ if (account && user && profile) === true");
+
+        user.familyName = profile.family_name;
+        user.givenName = profile.given_name;
+        user.emailVerified = profile.email_verified;
+        return {
+          accessToken: account.access_token,
+          accessTokenExpires: account.expires_at * 1000,
+          refreshToken: account.refresh_token,
+          user,
+          account,
+        };
+      }
+
       // Return previous token if the access token has not expired yet
       if (Date.now() < token.accessTokenExpires) {
+        console.log(
+          "😀😀😀 if (Date.now() < token.accessTokenExpires) === true"
+        );
         return token;
       }
 
-      // Initial sign in
-      // if (account && user && profile) {
-      //   user.familyName = profile.family_name;
-      //   user.givenName = profile.given_name;
-      //   user.emailVerified = profile.email_verified;
-      //   return {
-      //     accessToken: account.access_token,
-      //     accessTokenExpires: account.expires_at * 1000,
-      //     refreshToken: account.refresh_token,
-      //     user,
-      //     account,
-      //   };
-      // }
-
-      // Return previous token if the access token has not expired yet
-      // if (Date.now() < token.accessTokenExpires) {
-      //   return token;
-      // }
-
       // Access token has expired, try to update it
-      return refreshAccessToken(token);
+      // return refreshAccessToken(token);
+    },
+    async session({ session, token }) {
+      if (token) {
+        // Return all data into user
+        session.user = { ...token.user, ...token.account, ...token.profile };
+        session.accessToken = token.accessToken;
+        session.error = token.error;
+      }
+      return session;
+    },
+
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith(baseUrl)) return url;
+      // split from callbackUrl {'signOut?idToken'}
+      const urlSplit = url.split("?");
+      const idToken = urlSplit[1];
+      // This is the beef:
+      if (urlSplit[0] === "signOut") {
+        const ssoLogoutUrl = `https://lab-ids.savvycom.xyz/realms/savvy-fitness/protocol/openid-connect/logout`;
+        const redirectUrl = "https://lab-fitness.savvycom.xyz";
+        const signOutWithRedirectUrl = `${ssoLogoutUrl}?post_logout_redirect_uri=${encodeURIComponent(
+          redirectUrl
+        )}&id_token_hint=${idToken}`;
+        return signOutWithRedirectUrl;
+      }
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return new URL(url, baseUrl).toString();
+      return baseUrl;
     },
   },
 };
