@@ -109,25 +109,6 @@ export const authOptions = {
       }
       return session;
     },
-
-    async redirect({ url, baseUrl }) {
-      if (url.startsWith(baseUrl)) return url;
-      // split from callbackUrl {'signOut?idToken'}
-      const urlSplit = url.split("?");
-      const idToken = urlSplit[1];
-      // This is the beef:
-      if (urlSplit[0] === "signOut") {
-        const ssoLogoutUrl = `${process.env.NX_NEXT_PUBLIC_KEYCLOAK_BASE_URL}/logout`;
-        const redirectUrl = process.env.NEXTAUTH_URL;
-        const signOutWithRedirectUrl = `${ssoLogoutUrl}?post_logout_redirect_uri=${encodeURIComponent(
-          redirectUrl
-        )}&id_token_hint=${idToken}`;
-        return signOutWithRedirectUrl;
-      }
-      // Allows relative callback URLs
-      if (url.startsWith("/")) return new URL(url, baseUrl).toString();
-      return baseUrl;
-    },
   },
 };
 export default NextAuth(authOptions);
