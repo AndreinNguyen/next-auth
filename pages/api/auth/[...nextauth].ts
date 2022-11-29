@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt(data) {
-      return data;
+      return data.token;
       // console.log({ token, user, account, profile });
 
       // // Initial sign in
