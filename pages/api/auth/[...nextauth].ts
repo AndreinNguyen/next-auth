@@ -115,6 +115,19 @@ export const authOptions: NextAuthOptions = {
       if (account) {
         console.log("✅✅✅ if (account && user && profile) === true");
 
+        console.log(`😢😢😢 account`, account);
+        console.log(`📅📅📅📅 Date.now`);
+        console.log(Date.now());
+        console.log(
+          `😢😢😢 token.accessTokenExpires`,
+          account.expires_at * 1000
+        );
+
+        console.log(
+          `😢😢😢 Date.now() < token.accessTokenExpires`,
+          Date.now() < account.expires_at * 1000
+        );
+
         user.familyName = profile.family_name;
         user.givenName = profile.given_name;
         user.emailVerified = profile.email_verified;
@@ -128,10 +141,10 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
-      console.log(`😢😢😢 account`, account);
-      console.log(`📅📅📅📅 Date.now`);
-      console.log(Date.now());
-      console.log(`😢😢😢 token.accessTokenExpires`, token.accessTokenExpires);
+      // console.log(`😢😢😢 account`, account);
+      // console.log(`📅📅📅📅 Date.now`);
+      // console.log(Date.now());
+      // console.log(`😢😢😢 token.accessTokenExpires`, token.accessTokenExpires);
       console.log(
         `😢😢😢 Date.now() < token.accessTokenExpires`,
         Date.now() < token.accessTokenExpires
