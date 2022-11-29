@@ -1,70 +1,132 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import FacebookProvider from "next-auth/providers/facebook";
-import GithubProvider from "next-auth/providers/github";
-import TwitterProvider from "next-auth/providers/twitter";
-import Auth0Provider from "next-auth/providers/auth0";
-// import AppleProvider from "next-auth/providers/apple"
-// import EmailProvider from "next-auth/providers/email"
+import { JWT } from "next-auth/jwt";
+
 import KeycloakProvider from "next-auth/providers/keycloak";
 
 // For more information on each option (and a full list of options) go to
 // https://next-auth.js.org/configuration/options
-export const authOptions: NextAuthOptions = {
-  // https://next-auth.js.org/configuration/providers/oauth
-  providers: [
-    /* EmailProvider({
-         server: process.env.EMAIL_SERVER,
-         from: process.env.EMAIL_FROM,
-       }),
-    // Temporarily removing the Apple provider from the demo site as the
-    // callback URL for it needs updating due to Vercel changing domains
 
-    Providers.Apple({
-      clientId: process.env.APPLE_ID,
-      clientSecret: {
-        appleId: process.env.APPLE_ID,
-        teamId: process.env.APPLE_TEAM_ID,
-        privateKey: process.env.APPLE_PRIVATE_KEY,
-        keyId: process.env.APPLE_KEY_ID,
+async function refreshAccessToken(token: JWT) {
+  try {
+    console.log("run in refreshAccessToken");
+
+    if (Date.now() > token.refreshTokenExpired) throw Error;
+    // const details = {
+    //   client_id: 'fitness-app',
+    //   client_secret: 'SmeYEExCsyBLDcKfoAKVEg7VXnzB8vpe',
+    //   grant_type: ['refresh_token'],
+    //   refresh_token: token.refreshToken,
+    // };
+    // const formBody: string[] = [];
+
+    // Object.entries(details).forEach(([key, value]: [string, string]) => {
+    //   const encodedKey = encodeURIComponent(key);
+    //   const encodedValue = encodeURIComponent(value);
+    //   formBody.push(encodedKey + '=' + encodedValue);
+    // });
+    // console.log({ formBody });
+
+    const params = {
+      grant_type: "authorization_code",
+      code: token.refreshToken,
+      redirect_uri: "https://lab-fitness.savvycom.xyz/sso/callback",
+      client_id: "fitness-app",
+      client_secret: "SmeYEExCsyBLDcKfoAKVEg7VXnzB8vpe",
+    };
+
+    const formBody: string[] = [];
+
+    Object.entries(params).forEach(([key, value]: [string, string]) => {
+      const encodedKey = encodeURIComponent(key);
+      const encodedValue = encodeURIComponent(value);
+      formBody.push(encodedKey + "=" + encodedValue);
+    });
+
+    console.log({ formBody });
+
+    const formData = formBody.join("&");
+    const url = `https://lab-ids.savvycom.xyz/realms/savvy-fitness/protocol/openid-connect/token`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
       },
-    }),
-    */
-    // FacebookProvider({
-    //   clientId: process.env.FACEBOOK_ID,
-    //   clientSecret: process.env.FACEBOOK_SECRET,
-    // }),
-    // GithubProvider({
-    //   clientId: process.env.GITHUB_ID,
-    //   clientSecret: process.env.GITHUB_SECRET,
-    // }),
+      body: formData,
+    });
+
+    const refreshedTokens = await response.json();
+
+    if (!response.ok) {
+      throw refreshedTokens;
+    }
+
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
+      refreshTokenExpired:
+        Date.now() + refreshedTokens.refresh_expires_in * 1000,
+    };
+  } catch (error) {
+    console.log("🚫🚫🚫 error 🚫🚫🚫");
+    console.error({ error });
+    let ErrMessage;
+    // switch (error.error) {
+    //   case "invalid_grant":
+    //     ErrMessage = "SessionNotActive";
+    //     break;
+
+    //   default:
+    //     ErrMessage = "RefreshAccessTokenError";
+    //     break;
+    // }
+    return {
+      ...token,
+      error: ErrMessage,
+    };
+  }
+}
+
+export const authOptions: NextAuthOptions = {
+  providers: [
     KeycloakProvider({
       clientId: "fitness-app",
       clientSecret: "SmeYEExCsyBLDcKfoAKVEg7VXnzB8vpe",
       issuer: "https://lab-ids.savvycom.xyz/realms/savvy-fitness",
       idToken: true,
     }),
-    // GoogleProvider({
-    //   clientId: process.env.GOOGLE_ID,
-    //   clientSecret: process.env.GOOGLE_SECRET,
-    // }),
-    // TwitterProvider({
-    //   clientId: process.env.TWITTER_ID,
-    //   clientSecret: process.env.TWITTER_SECRET,
-    // }),
-    // Auth0Provider({
-    //   clientId: process.env.AUTH0_ID,
-    //   clientSecret: process.env.AUTH0_SECRET,
-    //   issuer: process.env.AUTH0_ISSUER,
-    // }),
   ],
-  theme: {
-    colorScheme: "light",
-  },
   callbacks: {
-    async jwt({ token }) {
-      token.userRole = "admin";
-      return token;
+    async jwt({ token, user, account, profile }) {
+      console.log({ token, user, account, profile });
+
+      // Initial sign in
+      if (account && user && profile) {
+        return {
+          accessToken: account.access_token,
+          accessTokenExpires: account.expires_at * 1000,
+          refreshToken: account.refresh_token,
+          user,
+          account,
+        };
+      }
+
+      // Return previous token if the access token has not expired yet
+      if (Date.now() < token.accessTokenExpires) {
+        console.log(token);
+        return token;
+      }
+
+      // Access token has expired, try to update it
+      return refreshAccessToken(token);
+    },
+    async session({ session, token }: { session: any; token: any }) {
+      if (token) {
+        // Return all data into user
+        session.token = token;
+      }
+      return session;
     },
   },
 };
